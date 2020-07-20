@@ -15,14 +15,15 @@ class TasksController extends Controller
      */
     public function index()
     {
-        // メッセージ一覧を取得
-        $tasks = Task::paginate(25);
+        // ユーザ一覧をidの降順で取得
+        $tasks = Task::orderBy('id', 'desc')->paginate(10);
 
-        // メッセージ一覧ビューでそれを表示
+        // ユーザ一覧ビューでそれを表示
         return view('tasks.index', [
             'tasks' => $tasks,
         ]);
     }
+
 
     /**
      * Show the form for creating a new resource.
@@ -71,10 +72,10 @@ class TasksController extends Controller
      */
     public function show($id)
     {
-        // idの値でメッセージを検索して取得
+        // idの値でユーザを検索して取得
         $task = Task::findOrFail($id);
 
-        // メッセージ詳細ビューでそれを表示
+        // ユーザ詳細ビューでそれを表示
         return view('tasks.show', [
             'task' => $task,
         ]);
@@ -129,7 +130,7 @@ class TasksController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+       public function destroy($id)
     {
         // idの値でメッセージを検索して取得
         $task = Task::findOrFail($id);
@@ -139,4 +140,5 @@ class TasksController extends Controller
         // トップページへリダイレクトさせる
         return redirect('/');
     }
+    
 }
