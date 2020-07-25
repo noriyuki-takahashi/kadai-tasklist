@@ -14,14 +14,27 @@ class TasksController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function index()
-    {
+        {
+        $data = [];
+        if (\Auth::check()) { // 認証済みの場合
+        // 認証済みユーザを取得
+        $user = \Auth::user();
+        
         // ユーザ一覧をidの降順で取得
-        $tasks = Task::orderBy('id', 'desc')->paginate(10);
+        $tasks = $user->tasks()->orderBy('created_at', 'desc')->paginate(10);
 
-        // ユーザ一覧ビューでそれを表示
-        return view('tasks.index', [
+        //$tasks = Task::orderBy('id', 'desc')->paginate(10);
+
+        $data = [
+            'user' => $user,
             'tasks' => $tasks,
-        ]);
+        ];
+        }
+
+        // Welcomeビューでそれらを表示
+    
+        return view('tasks.index', $data);
+        
     }
 
 
@@ -38,6 +51,11 @@ class TasksController extends Controller
         return view('tasks.create', [
             'task' => $task,
         ]);
+        
+        // 認証済みユーザ（閲覧者）がその投稿の所有者である場合は、投稿を
+        if (\Auth::id() === $task->user_id) {
+            $task->create();
+        }
     }
 
     /**
@@ -58,8 +76,15 @@ class TasksController extends Controller
         $task = new Task;
         $task->status = $request->status;    // 追加
         $task->content = $request->content;
+        $task->user_id = $request->user()->id;    // 7/24追加
         $task->save();
-
+        
+        // 認証済みユーザ（閲覧者）の投稿として作成（リクエストされた値をもとに作成）
+        $request->user()->tasks()->create([     // 7/25 task→tasksに直した。
+            'content' => $request->content,
+            'status' => $request->status,    // 7/24追加。Task.phpをprotected $fillable = ['content', 'status', 'user_id'];にした。 
+        ]);
+ 
         // トップページへリダイレクトさせる
         return redirect('/');
     }
@@ -74,7 +99,7 @@ class TasksController extends Controller
     {
         // idの値でユーザを検索して取得
         $task = Task::findOrFail($id);
-
+        
         // ユーザ詳細ビューでそれを表示
         return view('tasks.show', [
             'task' => $task,
@@ -95,6 +120,12 @@ class TasksController extends Controller
         // メッセージ編集ビューでそれを表示
         return view('tasks.edit', [
             'task' => $task,
+        ]);
+        
+         // 認証済みユーザ（閲覧者）の投稿として作成（リクエストされた値をもとに作成）
+        $request->user()->tasks()->create([
+            'content' => $request->content,
+            'status' => $request->status,    // 7/24追加してみた
         ]);
     }
 
@@ -119,6 +150,11 @@ class TasksController extends Controller
         $task->status = $request->status;    // 追加
         $task->content = $request->content;
         $task->save();
+        
+         // 認証済みユーザ（閲覧者）がその投稿の所有者である場合は、投稿を更新
+        if (\Auth::id() === $task->user_id) {
+            $task->push();   // 7/25put→pushに変更で成功した
+        }
 
         // トップページへリダイレクトさせる
         return redirect('/');
@@ -136,6 +172,13 @@ class TasksController extends Controller
         $task = Task::findOrFail($id);
         // メッセージを削除
         $task->delete();
+        
+        // 認証済みユーザ（閲覧者）がその投稿の所有者である場合は、投稿を削除
+        if (\Auth::id() === $task->user_id) {
+            $task->delete();
+        }
+        
+        
 
         // トップページへリダイレクトさせる
         return redirect('/');
