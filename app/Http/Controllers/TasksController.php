@@ -100,10 +100,17 @@ class TasksController extends Controller
         // idの値でユーザを検索して取得
         $task = Task::findOrFail($id);
         
+        if (\Auth::id() === $task->user_id) {
         // ユーザ詳細ビューでそれを表示
         return view('tasks.show', [
             'task' => $task,
         ]);
+        }
+        // トップページへリダイレクトさせる
+        return redirect('/');
+        
+ 
+     
     }
 
     /**
@@ -117,16 +124,19 @@ class TasksController extends Controller
         // idの値でメッセージを検索して取得
         $task = Task::findOrFail($id);
 
+        if (\Auth::id() === $task->user_id) {
         // メッセージ編集ビューでそれを表示
         return view('tasks.edit', [
             'task' => $task,
         ]);
-        
          // 認証済みユーザ（閲覧者）の投稿として作成（リクエストされた値をもとに作成）
         $request->user()->tasks()->create([
             'content' => $request->content,
             'status' => $request->status,    // 7/24追加してみた
         ]);
+        }
+        // トップページへリダイレクトさせる
+        return redirect('/');
     }
 
     /**
@@ -149,11 +159,11 @@ class TasksController extends Controller
         // メッセージを更新
         $task->status = $request->status;    // 追加
         $task->content = $request->content;
-        $task->save();
+        //$task->save();  7/27下のif文の更新とダブルのでコメントアウト
         
-         // 認証済みユーザ（閲覧者）がその投稿の所有者である場合は、投稿を更新
+        // 認証済みユーザ（閲覧者）がその投稿の所有者である場合は、投稿を更新
         if (\Auth::id() === $task->user_id) {
-            $task->push();   // 7/25put→pushに変更で成功した
+            $task->save();   // 7/25put→pushに変更で成功した 7/27上のsaveをコメントアウトしてpush→saveに変更
         }
 
         // トップページへリダイレクトさせる
@@ -170,9 +180,10 @@ class TasksController extends Controller
     {
         // idの値でメッセージを検索して取得
         $task = Task::findOrFail($id);
-        // メッセージを削除
-        $task->delete();
         
+        // メッセージを削除
+        //$message->delete();
+     
         // 認証済みユーザ（閲覧者）がその投稿の所有者である場合は、投稿を削除
         if (\Auth::id() === $task->user_id) {
             $task->delete();
